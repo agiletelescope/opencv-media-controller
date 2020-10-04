@@ -14,7 +14,6 @@ class OpencvMediaController:
         self.log_level = log_level
 
         self.capture = None
-        self.iterator = iter(self)
         self._init_video_capture()
 
     def __enter__(self):
@@ -24,8 +23,7 @@ class OpencvMediaController:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        cv2.destroyAllWindows()
-        self.capture.release()
+        self.stop()
 
     def __next__(self):
         ret, frame = self.capture.read()
@@ -36,7 +34,12 @@ class OpencvMediaController:
         return frame
 
     def get_frames(self):
-        return self.iterator
+        return self
+
+    def stop(self):
+        # Release opencv resources
+        cv2.destroyAllWindows()
+        self.capture.release()
 
     def _init_video_capture(self):
 
@@ -53,7 +56,9 @@ class OpencvMediaController:
 
     def show_frame(self):
         cv2.imshow("", self.current_frame)
-        cv2.waitKey(self.delay)
+        key = cv2.waitKey(self.delay)
+        self.command(key)
 
-    def _handle_input_command(self):
-        pass
+    def command(self, key):
+        if key == ord('q'):
+            self.stop()
