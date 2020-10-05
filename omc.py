@@ -35,6 +35,7 @@ class OpencvMediaController:
             raise StopIteration
 
         self.current_frame = frame
+        self.frame_count += 1
         return frame
 
     def get_frames(self):
@@ -46,12 +47,12 @@ class OpencvMediaController:
         self.capture.release()
 
     def rewind(self):
-        self.frame_count -= 1
+        self.frame_count -= 5
         self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
 
     def fast_forward(self):
         if 0 <= self.frame_count < self.total_num_frames:
-            self.frame_count += 1
+            self.frame_count += 5
             self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
 
     def pause(self):
@@ -80,9 +81,9 @@ class OpencvMediaController:
         if key == ord('q'):
             self.stop()
         elif key == ord('a'):
-            pass
+            self.rewind()
         elif key == ord('d'):
-            pass
+            self.fast_forward()
         elif key == 32:
             # 32 is the space-bar
-            pass
+            self.pause()
