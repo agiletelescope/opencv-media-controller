@@ -3,7 +3,7 @@ import cv2
 
 class OpencvMediaController:
 
-    def __init__(self, source=0, delay=1, log_level=0):
+    def __init__(self, source=0, delay=1, jump_delay_sec=1, log_level=0):
 
         # Validate arguments
         if type(source) not in [int, str]:
@@ -11,12 +11,14 @@ class OpencvMediaController:
 
         self.source = source
         self.delay = delay
+        self.jump_delay_sec = jump_delay_sec
         self.log_level = log_level
 
         self.capture = None
-        self.source_shape = None
+        self.stream_fps = 0
         self.frame_count = 0
-        self.total_num_frames = 0
+        self.num_frames = 0
+        self.source_shape = None
         self.is_stream_paused = False
         self._init_video_capture()
 
@@ -30,6 +32,12 @@ class OpencvMediaController:
         self.stop()
 
     def __next__(self):
+
+        # If frame paused, return current frame
+        if self.is_stream_paused:
+            return self.current_frame
+
+        # Read the next frame
         ret, frame = self.capture.read()
         if not ret or frame is None:
             raise StopIteration
@@ -39,6 +47,8 @@ class OpencvMediaController:
         return frame
 
     def get_frames(self):
+        # Redundant function,
+        # Implemented to help increase readability in consumer code
         return self
 
     def stop(self):
@@ -47,12 +57,12 @@ class OpencvMediaController:
         self.capture.release()
 
     def rewind(self):
-        self.frame_count -= 5
+        self.frame_count -= (self.stream_fps * self.jump_delay_sec)
         self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
 
     def fast_forward(self):
-        if 0 <= self.frame_count < self.total_num_frames:
-            self.frame_count += 5
+        if 0 <= self.frame_count < self.num_frames:
+            self.frame_count += (self.stream_fps * self.jump_delay_sec)
             self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
 
     def pause(self):
@@ -67,10 +77,14 @@ class OpencvMediaController:
 
         # Init frame width and height
         ret, self.current_frame = self.capture.read()
-        if ret:
-            self.frame_count += 1
-            self.source_shape = self.current_frame.shape[:2]
-            self.total_num_frames = self.capture.get(cv2.CAP_PROP_FRAME_COUNT)
+        if not ret:
+            return
+
+        # Populate stream params
+        self.frame_count += 1
+        self.source_shape = self.current_frame.shape[:2]
+        self.stream_fps = self.capture.get(cv2.CAP_PROP_FPS)
+        self.num_frames = self.capture.get(cv2.CAP_PROP_FRAME_COUNT)
 
     def show_frame(self):
         cv2.imshow("", self.current_frame)
