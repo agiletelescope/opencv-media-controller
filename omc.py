@@ -14,6 +14,10 @@ class OpencvMediaController:
         self.log_level = log_level
 
         self.capture = None
+        self.source_shape = None
+        self.frame_count = 0
+        self.total_num_frames = 0
+        self.is_stream_paused = False
         self._init_video_capture()
 
     def __enter__(self):
@@ -41,6 +45,18 @@ class OpencvMediaController:
         cv2.destroyAllWindows()
         self.capture.release()
 
+    def rewind(self):
+        self.frame_count -= 1
+        self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
+
+    def fast_forward(self):
+        if 0 <= self.frame_count < self.total_num_frames:
+            self.frame_count += 1
+            self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
+
+    def pause(self):
+        self.is_stream_paused = not self.is_stream_paused
+
     def _init_video_capture(self):
 
         # Initialize opencv VideoCapture
@@ -49,10 +65,11 @@ class OpencvMediaController:
             raise ValueError(f"Failed to open media source: {self.source}")
 
         # Init frame width and height
-        self.source_shape = None
         ret, self.current_frame = self.capture.read()
         if ret:
+            self.frame_count += 1
             self.source_shape = self.current_frame.shape[:2]
+            self.total_num_frames = self.capture.get(cv2.CAP_PROP_FRAME_COUNT)
 
     def show_frame(self):
         cv2.imshow("", self.current_frame)
@@ -62,3 +79,10 @@ class OpencvMediaController:
     def command(self, key):
         if key == ord('q'):
             self.stop()
+        elif key == ord('a'):
+            pass
+        elif key == ord('d'):
+            pass
+        elif key == 32:
+            # 32 is the space-bar
+            pass
