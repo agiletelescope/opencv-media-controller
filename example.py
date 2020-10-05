@@ -1,6 +1,6 @@
 from omc import OpencvMediaController
 
-file_path = '/home/sujay/projects/ml_assets/media/manypeople.mp4'
-with OpencvMediaController(file_path, delay=50) as omc:
+file_path = '/home/sujay/projects/ml_assets/media/debate.mp4'
+with OpencvMediaController(file_path, delay=10) as omc:
     for frame in omc.get_frames():  # 'omc.get_frames()' can be replaced with just 'omc'
-        omc.show_frame()
+        omc.show_frame(window_name='Example')

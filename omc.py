@@ -46,28 +46,6 @@ class OpencvMediaController:
         self.frame_count += 1
         return frame
 
-    def get_frames(self):
-        # Redundant function,
-        # Implemented to help increase readability in consumer code
-        return self
-
-    def stop(self):
-        # Release opencv resources
-        cv2.destroyAllWindows()
-        self.capture.release()
-
-    def rewind(self):
-        self.frame_count -= (self.stream_fps * self.jump_delay_sec)
-        self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
-
-    def fast_forward(self):
-        if 0 <= self.frame_count < self.num_frames:
-            self.frame_count += (self.stream_fps * self.jump_delay_sec)
-            self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
-
-    def pause(self):
-        self.is_stream_paused = not self.is_stream_paused
-
     def _init_video_capture(self):
 
         # Initialize opencv VideoCapture
@@ -86,10 +64,57 @@ class OpencvMediaController:
         self.stream_fps = self.capture.get(cv2.CAP_PROP_FPS)
         self.num_frames = self.capture.get(cv2.CAP_PROP_FRAME_COUNT)
 
-    def show_frame(self):
-        cv2.imshow("", self.current_frame)
+    def get_frames(self):
+        # Redundant function,
+        # Implemented to help increase readability in consumer code
+        return self
+
+    def stop(self):
+        # Release opencv resources
+        cv2.destroyAllWindows()
+        self.capture.release()
+
+    def rewind(self):
+        if self.is_stream_paused:
+            return
+
+        self.frame_count -= (self.stream_fps * self.jump_delay_sec)
+        self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
+
+    def fast_forward(self):
+        if self.is_stream_paused:
+            return
+        
+        if 0 <= self.frame_count < self.num_frames:
+            self.frame_count += (self.stream_fps * self.jump_delay_sec)
+            self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
+
+    def pause(self):
+        self.is_stream_paused = not self.is_stream_paused
+
+    def show_frame(self, window_name=''):
+
+        if self.is_stream_paused:
+            self.put_text('Paused', (0, 0))
+
+        cv2.imshow(window_name, self.current_frame)
         key = cv2.waitKey(self.delay)
         self.command(key)
+
+        return key
+
+    def put_text(self, message, position, fill_color=(0, 0, 0), text_color=(255, 255, 255)):
+
+        position = (position[0] + 10, position[1] + 20)
+        font = cv2.FONT_HERSHEY_PLAIN
+        font_thickness = 1
+
+        (text_width, text_height) = cv2.getTextSize(message, font, 1, font_thickness)[0]
+        text_box = ((position[0] - 10, position[1] - 5),
+                    (position[0] + text_width - 10, position[1] + text_height - 35))
+
+        cv2.rectangle(self.current_frame, text_box[0], text_box[1], fill_color, cv2.FILLED)
+        cv2.putText(self.current_frame, message, text_box[0], font, 1, text_color, font_thickness)
 
     def command(self, key):
         if key == ord('q'):
