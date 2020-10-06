@@ -12,10 +12,8 @@ A drop-in one-file python library for opencv `VideoCapture` to provide media con
 Often times when processing a video using opencv `VideoCapture`, there's a possibility that you may need to re-process a frame, or skip to a portion in the video you want to process instead of waiting for the frame to arrive, or worse there's also a possibility of missing out on observing a frame you are interested in, that's when `omc` will come in handy.
 
 ### Usage
-copy the file `omc.py` to your project, then
-
 ```python
-# Import the Opencv Media Controller Library
+# Copy the file 'omc.py' to your project and import the library
 from omc import OpenMediaController
 
 # Minimal Usage, 
@@ -23,6 +21,11 @@ from omc import OpenMediaController
 with OpencvMediaController() as omc:
     for frame in omc.get_frames():  # 'omc.get_frames()' can be replaced with just 'omc'
         omc.show_frame()
+
+# Utility Functions
+# - omc.put_text(message)   => Show text with a background
+# - omc.show_frame()        => Display the current frame in a window
+# - Colors                  => Pre-defined set of colors
 ```
 
 ### Default Hotkeys
