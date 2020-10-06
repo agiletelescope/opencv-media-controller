@@ -2,10 +2,16 @@ import cv2
 
 
 class Colors:
+
+    """
+    Colors in BGR format
+    """
+
     RED = (0, 0, 255)
     GREEN = (0, 255, 0)
     BLUE = (255, 0, 0)
     WHITE = (255, 255, 255)
+    BLACK = (0, 0, 0)
     TEAL = (128, 128, 0)
     VIOLET = (238, 130, 238)
     PURPLE = (128, 0, 128)
@@ -13,7 +19,13 @@ class Colors:
 
 class OpencvMediaController:
 
-    def __init__(self, source=0, delay=1, jump_delay_sec=1, font_family=cv2.FONT_HERSHEY_PLAIN, log_level=0):
+    """
+    A wrapper around opencv `VideoCapture` to
+    provide media control abilities
+    """
+
+    def __init__(self, source=0, delay=1, jump_delay_sec=1,
+                 font_family=cv2.FONT_HERSHEY_PLAIN, log_level=0):
 
         # Validate arguments
         if type(source) not in [int, str]:
@@ -34,32 +46,7 @@ class OpencvMediaController:
         self.is_stream_paused = False
         self._init_video_capture()
 
-    def __enter__(self):
-        return self
-
-    def __iter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.stop()
-
-    def __next__(self):
-
-        # If frame paused, return current frame
-        if self.is_stream_paused:
-            return self.current_frame
-
-        # Read the next frame
-        ret, frame = self.capture.read()
-        if not ret or frame is None:
-            raise StopIteration
-
-        self.current_frame = frame
-        self.frame_count += 1
-        return frame
-
     def _init_video_capture(self):
-
         # Initialize opencv VideoCapture
         self.capture = cv2.VideoCapture(self.source)
         if not self.capture.isOpened():
@@ -77,11 +64,22 @@ class OpencvMediaController:
         self.num_frames = self.capture.get(cv2.CAP_PROP_FRAME_COUNT)
 
     def get_frames(self):
-        # Redundant function,
-        # Implemented to help increase readability in consumer code
+        """
+        Redundant function,
+        Implemented for better readability when fetching frames
+
+        :return:    self, the iterator to fetch frames
+        """
+
         return self
 
     def stop(self):
+        """
+        - Pause the stream
+        - Kill all opened windows
+        - Close the camera capture session
+        """
+
         if self.is_stream_paused:
             self.pause()
 
@@ -90,6 +88,10 @@ class OpencvMediaController:
         self.capture.release()
 
     def rewind(self):
+        """
+        Rewind [seconds (1 second by default) * fps] number of frames
+        """
+
         if self.is_stream_paused:
             return
 
@@ -98,6 +100,10 @@ class OpencvMediaController:
         self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
 
     def fast_forward(self):
+        """
+        Skip [seconds (1 second by default) * fps] number of frames
+        """
+
         if self.is_stream_paused:
             return
 
@@ -107,6 +113,10 @@ class OpencvMediaController:
             self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
 
     def restart(self):
+        """
+        Restart the stream, Set frame-index to 0
+        """
+
         if self.is_stream_paused:
             return
 
@@ -116,9 +126,19 @@ class OpencvMediaController:
             self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
 
     def pause(self):
+        """
+        Pause Stream
+        """
+
         self.is_stream_paused = not self.is_stream_paused
 
     def show_frame(self, window_name=''):
+        """
+        Display the current frame in a window using opencv `imshow`
+
+        :param window_name:     The name of the window, empty by default
+        :return:                The window input key if any, else None
+        """
 
         if self.is_stream_paused:
             self.put_text(f'  Paused  ', fill_color=Colors.RED)
@@ -127,10 +147,23 @@ class OpencvMediaController:
         self.command(key)
         cv2.imshow(window_name, self.current_frame)
 
-        return key
+        return key if key != -1 else None
 
-    def put_text(self, message, position=None, fill_color=(0, 0, 0),
-                 text_color=(255, 255, 255), font_thickness=1, is_centered=False):
+    def put_text(self, message, position=None, fill_color=Colors.BLACK,
+                 text_color=Colors.WHITE, font_thickness=1, is_centered=False):
+
+        """
+        Puts text on the screen with a background fill
+
+        :param message:         The message to be displayed
+        :param position:        The position of the message, (x, y), defaults to center
+        :param fill_color:      The background fill color, defaults to color black
+        :param text_color:      The color of the message, defaults to color white
+        :param font_thickness:  Thickness of the message, defaults to 1
+        :param is_centered:     True if message needs to be centered, False otherwise
+
+        :return:                None
+        """
 
         # Center text if position is not available
         is_centered = is_centered or position is None
@@ -152,6 +185,13 @@ class OpencvMediaController:
                     1, text_color, font_thickness)
 
     def command(self, key):
+        """
+        Handle input from opencv waitKey
+
+        :param key:     The input Key
+        :return:        None
+        """
+
         if key == ord('q'):
             self.stop()
         elif key == ord('a'):
@@ -163,3 +203,27 @@ class OpencvMediaController:
         elif key == 32:
             # 32 is the space-bar
             self.pause()
+
+    def __next__(self):
+
+        # If frame paused, return current frame
+        if self.is_stream_paused:
+            return self.current_frame
+
+        # Read the next frame
+        ret, frame = self.capture.read()
+        if not ret or frame is None:
+            raise StopIteration
+
+        self.current_frame = frame
+        self.frame_count += 1
+        return frame
+
+    def __enter__(self):
+        return self
+
+    def __iter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
