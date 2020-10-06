@@ -21,13 +21,13 @@ class OpencvMediaController:
 
     """
     A wrapper around opencv `VideoCapture` to
-    provide media control abilities
+    provide media control capabilities
     """
 
     def __init__(self, source=0, frame_delay_ms=1, jump_interval_ms=1000):
 
         """
-        Constructor,
+        Constructor, initialize the library
 
         :param source:              VideoCapture source, camera-index or file path to open
         :param frame_delay_ms:      Opencv waitKey delay, in milliseconds
@@ -146,7 +146,7 @@ class OpencvMediaController:
         """
 
         if self.is_stream_paused:
-            self.put_text(f'  Paused  ', fill_color=Colors.PURPLE)
+            self.put_text(f'  Paused  ', fill_color=Colors.RED)
 
         key = cv2.waitKey(self.frame_delay_ms)
         self.command(key)
