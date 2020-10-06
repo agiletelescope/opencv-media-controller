@@ -24,8 +24,15 @@ class OpencvMediaController:
     provide media control abilities
     """
 
-    def __init__(self, source=0, delay=1, jump_delay_sec=1,
-                 font_family=cv2.FONT_HERSHEY_PLAIN, log_level=0):
+    def __init__(self, source=0, frame_delay_ms=1, jump_interval_ms=1000):
+
+        """
+        Constructor,
+
+        :param source:              VideoCapture source, camera-index or file path to open
+        :param frame_delay_ms:      Opencv waitKey delay, in milliseconds
+        :param jump_interval_ms:    Fast-forward/rewind interval, in milliseconds
+        """
 
         # Validate arguments
         if type(source) not in [int, str]:
@@ -33,10 +40,8 @@ class OpencvMediaController:
 
         # Input params
         self.source = source
-        self.delay = delay
-        self.jump_delay_sec = jump_delay_sec
-        self.log_level = log_level
-        self.font_family = font_family
+        self.frame_delay_ms = frame_delay_ms
+        self.jump_interval_ms = jump_interval_ms
 
         self.capture = None
         self.stream_fps = 0
@@ -95,8 +100,8 @@ class OpencvMediaController:
         if self.is_stream_paused:
             return
 
-        self.put_text(f'  <<<  ', fill_color=Colors.BLUE, font_thickness=2)
-        self.frame_count -= (self.stream_fps * self.jump_delay_sec)
+        self.put_text(f'  <<<  ', fill_color=Colors.PURPLE, font_thickness=2)
+        self.frame_count -= (self.stream_fps * (self.jump_interval_ms // 1000))
         self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
 
     def fast_forward(self):
@@ -107,9 +112,9 @@ class OpencvMediaController:
         if self.is_stream_paused:
             return
 
-        self.put_text(f'  >>>  ', fill_color=Colors.BLUE, font_thickness=2)
+        self.put_text(f'  >>>  ', fill_color=Colors.PURPLE, font_thickness=2)
         if 0 <= self.frame_count < self.num_frames:
-            self.frame_count += (self.stream_fps * self.jump_delay_sec)
+            self.frame_count += (self.stream_fps * (self.jump_interval_ms // 1000))
             self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.frame_count)
 
     def restart(self):
@@ -141,9 +146,9 @@ class OpencvMediaController:
         """
 
         if self.is_stream_paused:
-            self.put_text(f'  Paused  ', fill_color=Colors.RED)
+            self.put_text(f'  Paused  ', fill_color=Colors.PURPLE)
 
-        key = cv2.waitKey(self.delay)
+        key = cv2.waitKey(self.frame_delay_ms)
         self.command(key)
         cv2.imshow(window_name, self.current_frame)
 
@@ -167,21 +172,22 @@ class OpencvMediaController:
 
         # Center text if position is not available
         is_centered = is_centered or position is None
+        font_family = cv2.FONT_HERSHEY_PLAIN
 
         if is_centered:
-            text_size = cv2.getTextSize(message, self.font_family, 1, 2)[0]
+            text_size = cv2.getTextSize(message, font_family, 1, 2)[0]
             text_x = (self.source_shape[1] - text_size[0]) // 2
             text_y = (self.source_shape[0] + text_size[1]) // 2
             position = (text_x, text_y)
 
         position = (position[0] + 10, position[1] + 20)
 
-        (text_width, text_height) = cv2.getTextSize(message, self.font_family, 1, font_thickness)[0]
+        (text_width, text_height) = cv2.getTextSize(message, font_family, 1, font_thickness)[0]
         text_box = ((position[0] - 10, position[1] - 10),
                     (position[0] + text_width - 10, position[1] + text_height - 35))
 
         cv2.rectangle(self.current_frame, text_box[0], text_box[1], fill_color, cv2.FILLED)
-        cv2.putText(self.current_frame, message, text_box[0], self.font_family,
+        cv2.putText(self.current_frame, message, text_box[0], font_family,
                     1, text_color, font_thickness)
 
     def command(self, key):
